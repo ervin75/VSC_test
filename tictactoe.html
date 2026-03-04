@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gomoku 9×9</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #1a1a2e; color: #eee; }
+  .container { text-align: center; }
+  h1 { font-size: 2.5rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #e94560, #0f3460); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { font-size: 0.9rem; color: #888; margin-bottom: 0.8rem; }
+  .status { font-size: 1.3rem; margin-bottom: 1rem; min-height: 2rem; }
+  .board { display: grid; grid-template-columns: repeat(9, 60px); grid-template-rows: repeat(9, 60px); gap: 3px; margin: 0 auto 1.5rem; }
+  .cell { background: #16213e; border: 2px solid #0f3460; border-radius: 6px; font-size: 1.4rem; font-weight: bold; cursor: pointer; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; }
+  .cell:hover { background: #1a2a50; transform: scale(1.05); }
+  .cell.x { color: #e94560; }
+  .cell.o { color: #48bfe3; }
+  .cell.win { background: #0f3460; animation: pulse 0.6s infinite alternate; }
+  @keyframes pulse { to { transform: scale(1.08); } }
+  button { padding: 0.7rem 2rem; font-size: 1.1rem; border: none; border-radius: 8px; background: #e94560; color: #fff; cursor: pointer; transition: background 0.2s; }
+  button:hover { background: #c73652; }
+  .score { display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem; font-size: 1.1rem; }
+  .score span { padding: 0.3rem 1rem; border-radius: 6px; background: #16213e; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Gomoku 9×9</h1>
+  <div class="subtitle">Get 5 in a row to win!</div>
+  <div class="score">
+    <span class="x">X: <b id="sx">0</b></span>
+    <span>Draw: <b id="sd">0</b></span>
+    <span class="o">O: <b id="so">0</b></span>
+  </div>
+  <div class="status" id="status">X's turn</div>
+  <div class="board" id="board"></div>
+  <button onclick="reset()">New Game</button>
+</div>
+<script>
+  const SIZE = 9;
+  const WIN_LEN = 5;
+  const TOTAL = SIZE * SIZE;
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  let cells, current, state, over;
+  const score = { x: 0, o: 0, d: 0 };
+
+  const directions = [
+    [0, 1],  // horizontal
+    [1, 0],  // vertical
+    [1, 1],  // diagonal down-right
+    [1, -1], // diagonal down-left
+  ];
+
+  function checkWin(index, player) {
+    const row = Math.floor(index / SIZE);
+    const col = index % SIZE;
+
+    for (const [dr, dc] of directions) {
+      const line = [];
+      for (let s = -(WIN_LEN - 1); s <= WIN_LEN - 1; s++) {
+        const r = row + dr * s;
+        const c = col + dc * s;
+        if (r >= 0 && r < SIZE && c >= 0 && c < SIZE && state[r * SIZE + c] === player) {
+          line.push(r * SIZE + c);
+          if (line.length === WIN_LEN) return line;
+        } else {
+          line.length = 0;
+        }
+      }
+    }
+    return null;
+  }
+
+  function init() {
+    boardEl.innerHTML = '';
+    cells = []; current = 'X'; state = Array(TOTAL).fill(''); over = false;
+    statusEl.textContent = "X's turn";
+    for (let i = 0; i < TOTAL; i++) {
+      const d = document.createElement('div');
+      d.className = 'cell';
+      d.addEventListener('click', () => play(i));
+      boardEl.appendChild(d);
+      cells.push(d);
+    }
+  }
+
+  function play(i) {
+    if (over || state[i]) return;
+    state[i] = current;
+    cells[i].textContent = current;
+    cells[i].classList.add(current.toLowerCase());
+
+    const w = checkWin(i, current);
+    if (w) {
+      w.forEach(j => cells[j].classList.add('win'));
+      statusEl.textContent = `${current} wins!`;
+      score[current.toLowerCase()]++;
+      over = true;
+    } else if (state.every(Boolean)) {
+      statusEl.textContent = "It's a draw!";
+      score.d++;
+      over = true;
+    } else {
+      current = current === 'X' ? 'O' : 'X';
+      statusEl.textContent = `${current}'s turn`;
+    }
+    if (over) updateScore();
+  }
+
+  function updateScore() {
+    document.getElementById('sx').textContent = score.x;
+    document.getElementById('so').textContent = score.o;
+    document.getElementById('sd').textContent = score.d;
+  }
+
+  function reset() { init(); }
+  init();
+</script>
+</body>
+</html>
